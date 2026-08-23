@@ -27,7 +27,11 @@ class FollowUpJob(UUIDMixin, TimestampMixin, Base):
     )
 
     status: Mapped[JobStatus] = mapped_column(
-        Enum(JobStatus),
+        Enum(
+            JobStatus,
+            values_callable=lambda enum: [item.value for item in enum],
+            name="job_status",
+        ),
         default=JobStatus.PENDING,
         index=True,
         nullable=False,

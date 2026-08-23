@@ -41,7 +41,11 @@ class Lead(UUIDMixin, TimestampMixin, Base):
     )
 
     priority: Mapped[LeadPriority] = mapped_column(
-        Enum(LeadPriority),
+        Enum(
+            LeadPriority,
+            values_callable=lambda enum: [item.value for item in enum],
+            name="lead_priority",
+        ),
         index=True,
         nullable=False,
     )
@@ -62,7 +66,11 @@ class Lead(UUIDMixin, TimestampMixin, Base):
     )
 
     status: Mapped[LeadStatus] = mapped_column(
-        Enum(LeadStatus),
+        Enum(
+            LeadStatus,
+            values_callable=lambda enum: [item.value for item in enum],
+            name="lead_status",
+        ),
         default=LeadStatus.NEW,
         index=True,
         nullable=False,

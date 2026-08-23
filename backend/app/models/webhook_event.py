@@ -17,9 +17,9 @@ class WebhookEvent(UUIDMixin, Base):
         nullable=False,
     )
 
-    enquiry_id: Mapped[UUID] = mapped_column(
+    enquiry_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
-        ForeignKey("enquiries.id", ondelete="CASCADE"),
+        ForeignKey("enquiries.id", ondelete="SET NULL"),
         nullable=True,
     )
 

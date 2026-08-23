@@ -1,8 +1,8 @@
 """create core leadflow tables
 
-Revision ID: e3ab8eb4ea7a
+Revision ID: 44dd1fc77e94
 Revises: f05dfe9399ef
-Create Date: 2026-08-23 16:31:09.482889
+Create Date: 2026-08-23 16:35:28.473131
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'e3ab8eb4ea7a'
+revision: str = '44dd1fc77e94'
 down_revision: Union[str, Sequence[str], None] = 'f05dfe9399ef'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,10 +24,10 @@ def upgrade() -> None:
     op.create_table('enquiries',
     sa.Column('name', sa.String(length=255), nullable=False),
     sa.Column('email', sa.String(length=255), nullable=False),
-    sa.Column('company', sa.String(length=255), nullable=False),
+    sa.Column('company', sa.String(length=255), nullable=True),
     sa.Column('message', sa.Text(), nullable=False),
     sa.Column('source', sa.String(length=100), nullable=False),
-    sa.Column('status', sa.Enum('RECEIVED', 'PENDING_PROCESSING', 'PROCESSING', 'PROCESSED', 'FAILED', name='enquirystatus'), nullable=False),
+    sa.Column('status', sa.Enum('received', 'pending_processing', 'processing', 'processed', 'failed', name='enquiry_status'), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
@@ -49,7 +49,7 @@ def upgrade() -> None:
     op.create_table('ai_processing_results',
     sa.Column('enquiry_id', sa.UUID(), nullable=False),
     sa.Column('category', sa.String(length=100), nullable=False),
-    sa.Column('priority', sa.Enum('LOW', 'MEDIUM', 'HIGH', name='leadpriority'), nullable=False),
+    sa.Column('priority', sa.Enum('low', 'medium', 'high', name='lead_priority'), nullable=False),
     sa.Column('intent', sa.String(length=255), nullable=True),
     sa.Column('extracted_company', sa.String(length=255), nullable=True),
     sa.Column('summary', sa.Text(), nullable=False),
@@ -68,11 +68,11 @@ def upgrade() -> None:
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('company', sa.String(length=255), nullable=True),
     sa.Column('category', sa.String(length=100), nullable=True),
-    sa.Column('priority', sa.Enum('LOW', 'MEDIUM', 'HIGH', name='leadpriority'), nullable=False),
+    sa.Column('priority', sa.Enum('low', 'medium', 'high', name='lead_priority'), nullable=False),
     sa.Column('intent', sa.String(length=255), nullable=True),
     sa.Column('summary', sa.Text(), nullable=True),
     sa.Column('suggested_response', sa.Text(), nullable=True),
-    sa.Column('status', sa.Enum('NEW', 'CONTACTED', 'QUALIFIED', 'CLOSED', name='leadstatus'), nullable=False),
+    sa.Column('status', sa.Enum('new', 'contacted', 'qualified', 'closed', name='lead_status'), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
@@ -93,14 +93,14 @@ def upgrade() -> None:
     sa.Column('received_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('processed_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.ForeignKeyConstraint(['enquiry_id'], ['enquiries.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['enquiry_id'], ['enquiries.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_webhook_events_event_id'), 'webhook_events', ['event_id'], unique=True)
     op.create_table('follow_up_jobs',
     sa.Column('lead_id', sa.UUID(), nullable=False),
     sa.Column('scheduled_for', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('status', sa.Enum('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', name='jobstatus'), nullable=False),
+    sa.Column('status', sa.Enum('pending', 'processing', 'completed', 'failed', name='job_status'), nullable=False),
     sa.Column('retry_count', sa.Integer(), nullable=False),
     sa.Column('max_retries', sa.Integer(), nullable=False),
     sa.Column('last_error', sa.Text(), nullable=True),

@@ -1,4 +1,4 @@
-from sqlalchemy import Enum, q2, String, Text, Index
+from sqlalchemy import Enum, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.models.enums import EnquiryStatus
@@ -59,7 +59,11 @@ class Enquiry(UUIDMixin, TimestampMixin, Base):
     )
 
     status: Mapped[EnquiryStatus] = mapped_column(
-        Enum(EnquiryStatus),
+        Enum(
+            EnquiryStatus,
+            values_callable=lambda enum: [item.value for item in enum],
+            name="enquiry_status",
+        ),
         default=EnquiryStatus.RECEIVED,
         nullable=False,
         index=True,

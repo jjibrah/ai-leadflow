@@ -1,5 +1,5 @@
 from uuid import UUID
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.models.enums import LeadPriority
@@ -21,6 +21,11 @@ class AIProcessingResult(UUIDMixin, TimestampMixin, Base):
     )
 
     priority: Mapped[LeadPriority] = mapped_column(
+        Enum(
+            LeadPriority,
+            values_callable=lambda enum: [item.value for item in enum],
+            name="lead_priority",
+        ),
         nullable=False,
     )
 
