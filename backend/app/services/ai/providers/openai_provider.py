@@ -1,126 +1,117 @@
 import asyncio
+from typing import Any
 
-from openai import AsyncOpenAI
+from openai import APIError, APITimeoutError, AsyncOpenAI
 from pydantic import ValidationError
 
 from app.services.ai.base import AIProvider
-from app.services.ai.schemas import AIProcessingOutput
 from app.services.ai.exceptions import (
     AIProviderError,
     AIProviderTimeout,
     AIResponseValidationError,
 )
+from app.services.ai.schemas import AIProcessingOutput
+
 
 class OpenAIProvider(AIProvider):
+    SYSTEM_INSTRUCTIONS = """
+You analyse customer enquiries for LeadFlow.
+
+Return structured lead intelligence grounded only in the supplied enquiry.
+The category must be one of: sales, support, partnership, general, spam.
+
+Priority rules:
+- high: urgent buying intent, serious commercial interest, an immediate
+  support issue, or another immediate business need
+- medium: legitimate interest or a request without immediate urgency
+- low: a general enquiry, weak commercial intent, an informational request,
+  or spam
+
+Do not invent unsupported facts. Keep the summary concise and make the
+suggested response professional and directly relevant to the enquiry.
+""".strip()
 
     def __init__(
         self,
         api_key: str,
         model: str,
         timeout: float = 25.0,
+        client: Any | None = None,
     ):
-        self.client = AsyncOpenAI(api_key=api_key)
+        self.client = client or AsyncOpenAI(api_key=api_key)
         self.model = model
         self.timeout = timeout
 
-def _build_prompt(
-    self,
-    name: str,
-    email: str,
-    company: str | None,
-    message: str,
-) -> str:
+    @staticmethod
+    def _build_input(
+        *,
+        name: str,
+        email: str,
+        company: str | None,
+        message: str,
+    ) -> str:
+        return f"""
+Customer enquiry
 
-    return f"""
-Analyse the following customer enquiry.
-
-Customer:
 Name: {name}
 Email: {email}
 Company: {company or "Not provided"}
 
 Message:
 {message}
+""".strip()
 
-Classify the enquiry into exactly one category:
-
-- sales
-- support
-- partnership
-- general
-- spam
-
-Determine priority:
-
-- high: urgent buying intent, serious commercial interest,
-  immediate support issue, or immediate business need
-
-- medium: legitimate interest or request but without
-  immediate urgency
-
-- low: general enquiry, weak commercial intent,
-  informational request, or spam
-
-Determine:
-
-- category
-- priority
-- customer intent
-- company
-- concise summary
-- suggested professional response
-
-Do not invent information that is not supported by the enquiry.
-"""
-async def process_enquiry(
-    self,
-    name: str,
-    email: str,
-    company: str | None,
-    message: str,
-) -> AIProcessingOutput:
-
-    prompt = self._build_prompt(
-        name=name,
-        email=email,
-        company=company,
-        message=message,
-    )
-
-    try:
-
-        response = await asyncio.wait_for(
-            self.client.responses.parse(
-                model=self.model,
-                input=prompt,
-                text_format=AIProcessingOutput,
-            ),
-            timeout=self.timeout,
+    async def process_enquiry(
+        self,
+        *,
+        name: str,
+        email: str,
+        company: str | None,
+        message: str,
+    ) -> AIProcessingOutput:
+        enquiry_input = self._build_input(
+            name=name,
+            email=email,
+            company=company,
+            message=message,
         )
 
-        result = response.output_parsed
+        try:
+            async with asyncio.timeout(self.timeout):
+                response = await self.client.responses.parse(
+                    model=self.model,
+                    instructions=self.SYSTEM_INSTRUCTIONS,
+                    input=enquiry_input,
+                    text_format=AIProcessingOutput,
+                    store=False,
+                )
 
-        if result is None:
+            if response.output_parsed is None:
+                raise AIResponseValidationError(
+                    "AI provider returned no structured output."
+                )
+
+            return AIProcessingOutput.model_validate(response.output_parsed)
+
+        except (TimeoutError, APITimeoutError) as exc:
+            raise AIProviderTimeout(
+                "AI provider request timed out."
+            ) from exc
+
+        except ValidationError as exc:
             raise AIResponseValidationError(
-                "AI provider returned no structured output."
-            )
+                "AI provider returned invalid structured output."
+            ) from exc
 
-        return result
+        except AIResponseValidationError:
+            raise
 
-    except asyncio.TimeoutError as exc:
-        raise AIProviderTimeout(
-            "AI provider request timed out."
-        ) from exc
+        except APIError as exc:
+            raise AIProviderError(
+                "AI provider request failed."
+            ) from exc
 
-    except ValidationError as exc:
-        raise AIResponseValidationError(
-            "AI provider returned invalid structured output."
-        ) from exc
-
-    except AIResponseValidationError:
-        raise
-
-    except Exception as exc:
-        raise AIProviderError(
-            "AI provider request failed."
-        ) from exc
+        except Exception as exc:
+            raise AIProviderError(
+                "AI provider request failed."
+            ) from exc

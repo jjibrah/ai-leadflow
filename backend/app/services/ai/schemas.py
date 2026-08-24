@@ -1,9 +1,14 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class AIProcessingOutput(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+    )
+
     category: Literal[
         "sales",
         "support",
@@ -34,3 +39,8 @@ class AIProcessingOutput(BaseModel):
         min_length=1,
         max_length=2000,
     )
+
+    @field_validator("company", mode="after")
+    @classmethod
+    def normalize_company(cls, value: str | None) -> str | None:
+        return value or None
