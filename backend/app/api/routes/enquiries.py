@@ -28,6 +28,8 @@ async def create_enquiry(
             data=payload,
         )
 
+        await db.commit()
+
         return EnquiryResponse(
             id=enquiry.id,
             status="received",
