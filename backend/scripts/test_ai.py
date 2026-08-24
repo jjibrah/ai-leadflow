@@ -1,6 +1,7 @@
 import asyncio
 from types import SimpleNamespace
 
+from app.core.config import settings
 from app.services.ai.exceptions import AIServiceError
 from app.services.ai.service import create_ai_service
 
@@ -30,6 +31,21 @@ async def main() -> None:
 
             if error_code is not None:
                 print(f"Provider error code: {error_code}")
+
+            provider_message = str(cause)
+            configured_keys = (
+                settings.GEMINI_API_KEY,
+                settings.OPENAI_API_KEY,
+            )
+
+            for configured_key in configured_keys:
+                if configured_key:
+                    provider_message = provider_message.replace(
+                        configured_key,
+                        "[REDACTED]",
+                    )
+
+            print(f"Provider message: {provider_message[:1000]}")
 
         raise SystemExit(1) from None
 
