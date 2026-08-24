@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.api.router import api_router
 from app.core.config import settings
 from app.db.session import get_db
 from app.core.exceptions import global_exception_handler
@@ -24,6 +24,11 @@ def create_app() -> FastAPI:
     app.add_exception_handler(
         Exception,
         global_exception_handler,
+    )
+
+    app.include_router(
+        api_router,
+        prefix="/api",
     )
 
     @app.get("/")
