@@ -33,6 +33,11 @@ class Enquiry(UUIDMixin, TimestampMixin, Base):
         nullable=False,
     )
 
+    last_error: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
 
     source: Mapped[str]=mapped_column(
         String(100),

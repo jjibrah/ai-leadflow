@@ -6,11 +6,13 @@ from app.api.router import api_router
 from app.core.config import settings
 from app.db.session import get_db
 from app.core.exceptions import global_exception_handler
+from app.core.redis import redis_lifespan
 
 
 def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.APP_NAME,
+        lifespan=redis_lifespan,
     )
 
     app.add_middleware(

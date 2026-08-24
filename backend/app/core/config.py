@@ -8,7 +8,8 @@ class Settings(BaseSettings):
     APP_ENV: str
     DATABASE_URL: str
     FRONTEND_URL: str
-    REDIS_URL: str
+    REDIS_URL: str = "redis://localhost:6379/0"
+    BACKGROUND_JOBS_ENABLED: bool = False
     JWT_SECRET_KEY: str
     WEBHOOK_SECRET: str
     AI_PROVIDER: Literal["gemini", "openai"] = "gemini"
