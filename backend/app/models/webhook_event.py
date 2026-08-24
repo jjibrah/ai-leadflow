@@ -1,46 +1,48 @@
-from datetime import datetime, timezone
-from uuid import UUID
-from sqlalchemy import DateTime, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
+import uuid
+from datetime import datetime
+
+from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
-from app.models.mixins import UUIDMixin
 
 
-class WebhookEvent(UUIDMixin, Base):
+class WebhookEvent(Base):
     __tablename__ = "webhook_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
 
     event_id: Mapped[str] = mapped_column(
         String(255),
         unique=True,
-        index=True,
         nullable=False,
+        index=True,
     )
 
-    enquiry_id: Mapped[UUID | None] = mapped_column(
-        PGUUID(as_uuid=True),
+    enquiry_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
         ForeignKey("enquiries.id", ondelete="SET NULL"),
         nullable=True,
     )
 
-    signature: Mapped[str] = mapped_column(
-        Text,
-        nullable=False,
-    )
-
     payload_hash: Mapped[str] = mapped_column(
-        String(255),
+        String(64),
         nullable=False,
     )
 
     status: Mapped[str] = mapped_column(
-        String(100),
+        String(50),
         nullable=False,
+        default="received",
     )
 
     received_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
 

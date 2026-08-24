@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.enquiry import Enquiry
+from app.models.enums import EnquiryStatus
 
 
 class EnquiryRepository:
@@ -21,12 +22,12 @@ class EnquiryRepository:
             company=company,
             message=message,
             source="website",
-            status="received",
+            status=EnquiryStatus.RECEIVED,
         )
 
         db.add(enquiry)
 
-        await db.commit()
+        await db.flush()
         await db.refresh(enquiry)
 
         return enquiry
